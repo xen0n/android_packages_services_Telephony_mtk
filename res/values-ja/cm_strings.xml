@@ -28,11 +28,11 @@
   <string name="call_notif_MOcall_forwarding">発信は転送されます</string>
   <string name="call_notif_cugcall">クローズドユーザーグループでの通話</string>
   <string name="call_notif_outgoing_barred">発信が阻止されました</string>
-  <string name="call_notif_incoming_barred">リモートパーティーで着信が阻止されました</string>
+  <string name="call_notif_incoming_barred">リモートパーティで着信が阻止されました</string>
   <string name="call_notif_clir_suppression_rejected">発信者番号通知制限がネットワークによって拒否されました</string>
-  <string name="call_notif_call_deflected">通話はリモートパーティーによって転送されました</string>
+  <string name="call_notif_call_deflected">通話はリモートパーティによって転送されました</string>
   <string name="call_notif_MTcall_forwarding">着信は転送されます</string>
-  <string name="call_notif_multipartycall">多者同時通話</string>
+  <string name="call_notif_multipartycall">マルチパーティ通話</string>
   <string name="call_notif_callonhold_released">リモートで通話が終了されました</string>
   <string name="call_notif_forwardcheckreceived">着信は転送されました</string>
   <string name="call_notif_callconnectingect">特定呼転送経由で呼接続中</string>
@@ -108,7 +108,7 @@
   <string name="preferred_network_mode_td_scdma_gsm_wcdma_lte_summary">優先ネットワークモード: TD-SCDMA/GSM/WCDMA/LTE</string>
   <string name="preferred_network_mode_td_scdma_lte_cdma_evdo_gsm_wcdma_summary">優先ネットワークモード: TD-SCDMA/LTE/CDMA/EvDo/GSM/WCDMA</string>
   <string name="preferred_network_mode_td_scdma_cdma_evdo_gsm_wcdma_summary">優先ネットワークモード: TD-SCDMA/CDMA/EvDo/GSM/WCDMA</string>
-  <string name="callFailed_incoming_cb_enabled">パーティーがすべての着信を禁止しています。</string>
+  <string name="callFailed_incoming_cb_enabled">パーティがすべての着信を禁止しています。</string>
   <string name="callUnanswered_forwarded">通話は応答されずに転送されました</string>
   <string name="preferred_network_mode_td_scdma_lte_gsm_wcdma_cdma_evdo_choice">TD-SCDMA/LTE/GSM/WCDMA/CDMA/EVDO</string>
   <string name="preferred_network_mode_td_scdma_gsm_wcdma_cdma_evdo_choice">TD-SCDMA/GSM/WCDMA/CDMA/EVDO</string>
@@ -227,4 +227,27 @@
   <string name="wifi_only">Wi-Fiのみ</string>
   <string name="cellular_preferred">セルラー優先</string>
   <string name="cellular_only">セルラーのみ</string>
+  <string name="call_barring">通話制限</string>
+  <string name="call_barring_outgoing">発信制限</string>
+  <string-array name="call_barring_outgoing_display_values">
+    <item>OFF</item>
+    <item>国際ローミング通話</item>
+    <item>国際通話</item>
+    <item>発信</item>
+  </string-array>
+  <string-array name="call_barring_incoming_display_values">
+    <item>OFF</item>
+    <item>ローミング</item>
+    <item>すべて</item>
+  </string-array>
+  <string name="call_barring_incoming">着信制限</string>
+  <string name="input_password">パスワードを入力してください</string>
+  <string name="invalidPsw">有効なパスワードを入力してください（4～8桁）</string>
+  <string name="labelCbCancelAll">通話制限を無効化</string>
+  <string name="labelCbChangePassword">パスワードを変更</string>
+  <string name="psw_enter_old">現在のパスワード</string>
+  <string name="psw_enter_new">新しいパスワード</string>
+  <string name="psw_reenter_new">パスワードを再入力してください</string>
+  <string name="no_call_barring">着信拒否は無効になっています</string>
+  <string name="cb_psw_dont_match">パスワードが一致しません</string>
 </resources>
