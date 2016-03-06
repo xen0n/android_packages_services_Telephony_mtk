@@ -40,8 +40,10 @@ import android.provider.Settings;
 import android.telephony.NeighboringCellInfo;
 import android.telephony.CellInfo;
 import android.telephony.IccOpenLogicalChannelResponse;
+import android.telephony.RadioAccessFamily;
 import android.telephony.ServiceState;
 import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -49,15 +51,19 @@ import android.util.Pair;
 
 import com.android.internal.telephony.CallManager;
 import com.android.internal.telephony.CommandException;
+import com.android.internal.telephony.DctConstants;
 import com.android.internal.telephony.DefaultPhoneNotifier;
 import com.android.internal.telephony.ITelephony;
 import com.android.internal.telephony.IccCard;
 import com.android.internal.telephony.Phone;
+import com.android.internal.telephony.PhoneBase;
+import com.android.internal.telephony.PhoneProxy;
 import com.android.internal.telephony.PhoneFactory;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.ProxyController;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.SubscriptionController;
+import com.android.internal.telephony.dataconnection.DcTrackerBase;
 import com.android.internal.telephony.uicc.IccIoResult;
 import com.android.internal.telephony.uicc.IccRecords;
 import com.android.internal.telephony.uicc.IccUtils;
@@ -73,6 +79,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+
+import com.mediatek.internal.telephony.RadioManager;
 
 /**
  * Implementation of the ITelephony interface.
@@ -120,6 +128,16 @@ public class PhoneInterfaceManager extends ITelephony.Stub {
     private static final int EVENT_SET_VOICEMAIL_NUMBER_DONE = 36;
     private static final int CMD_TOGGLE_LTE = 99; // not used yet
 
+    // MTK
+    private static final int CMD_SET_RADIO_MODE = 100;
+    private static final int EVENT_SET_RADIO_MODE_DONE = 101;
+    private static final int CMD_SIM_IO = 102;
+    private static final int EVENT_SIM_IO_DONE = 103;
+    private static final int CMD_GET_ATR = 104;
+    private static final int EVENT_GET_ATR_DONE = 105;
+    private static final int CMD_OPEN_CHANNEL_WITH_SW = 106;
+    private static final int EVENT_OPEN_CHANNEL_WITH_SW_DONE = 107;
+
     /** The singleton instance. */
     private static PhoneInterfaceManager sInstance;
 
@@ -134,6 +152,9 @@ public class PhoneInterfaceManager extends ITelephony.Stub {
     private static final String PREF_CARRIERS_ALPHATAG_PREFIX = "carrier_alphtag_";
     private static final String PREF_CARRIERS_NUMBER_PREFIX = "carrier_number_";
     private static final String PREF_ENABLE_VIDEO_CALLING = "enable_video_calling";
+    // MTK
+    private static final String PREF_CARRIERS_SIMPLIFIED_NETWORK_SETTINGS_PREFIX =
+            "carrier_simplified_network_settings_";
 
     /**
      * A request object to use for transmitting data to an ICC.
@@ -141,9 +162,17 @@ public class PhoneInterfaceManager extends ITelephony.Stub {
     private static final class IccAPDUArgument {
         public int channel, cla, command, p1, p2, p3;
         public String data;
+        // MTK
+        public String pathId;
+        public String pin2;
+        public int slotId;
 
         public IccAPDUArgument(int channel, int cla, int command,
                 int p1, int p2, int p3, String data) {
+            // MTK
+            int slot = SubscriptionManager.getSlotId(SubscriptionManager.getDefaultSubId());
+            if (DBG) log("IccAPDUArgument, default slot " + slot);
+
             this.channel = channel;
             this.cla = cla;
             this.command = command;
@@ -151,6 +180,39 @@ public class PhoneInterfaceManager extends ITelephony.Stub {
             this.p2 = p2;
             this.p3 = p3;
             this.data = data;
+            // MTK
+            this.pathId = null;
+            this.pin2 = null;
+            this.slotId = slot;
+        }
+
+        // MTK ctors
+        public IccAPDUArgument(int slotId, int channel, int cla, int command,
+                int p1, int p2, int p3, String pathId) {
+            this.channel = channel;
+            this.cla = cla;
+            this.command = command;
+            this.p1 = p1;
+            this.p2 = p2;
+            this.p3 = p3;
+            this.pathId = pathId;
+            this.data = null;
+            this.pin2 = null;
+            this.slotId = slotId;
+        }
+
+        public IccAPDUArgument(int slotId, int channel, int cla, int command,
+                int p1, int p2, int p3, String data, String pathId, String pin2) {
+            this.channel = channel;
+            this.cla = cla;
+            this.command = command;
+            this.p1 = p1;
+            this.p2 = p2;
+            this.p3 = p3;
+            this.pathId = pathId;
+            this.data = data;
+            this.pin2 = pin2;
+            this.slotId = slotId;
         }
     }
 
@@ -2427,5 +2489,253 @@ public class PhoneInterfaceManager extends ITelephony.Stub {
 
     public int getLteOnGsmMode() {
         return mPhone.getLteOnGsmMode();
+    }
+
+    // MTK
+
+    public int getDataStateForSubscriber(int subId) {
+        Phone phone = getPhone(subId);
+        if (phone == null) {
+            loge("getDataStateForSubscriber incorrect parameter [subId=" + subId + "]");
+            return TelephonyManager.DATA_DISCONNECTED;
+        } else {
+            return DefaultPhoneNotifier.convertDataState(phone.getDataConnectionState());
+        }
+    }
+
+    public int getDataActivityForSubscriber(int subId) {
+        Phone phone = getPhone(subId);
+        if (phone == null) {
+            loge("getDataActivityForSubscriber incorrect parameter [subId=" + subId + "]");
+            return DefaultPhoneNotifier.convertDataActivityState(Phone.DataActivityState.NONE);
+        } else {
+            return DefaultPhoneNotifier.convertDataActivityState(phone.getDataActivityState());
+        }
+    }
+
+    @Override
+    public void setRadioCapability(RadioAccessFamily[] rafs) {
+        try {
+            ProxyController.getInstance().setRadioCapability(rafs);
+        } catch (RuntimeException e) {
+            Log.w(LOG_TAG, "setRadioCapability: Runtime Exception");
+        }
+    }
+
+    @Override
+    public int getRadioAccessFamily(int phoneId) {
+        return ProxyController.getInstance().getRadioAccessFamily(phoneId);
+    }
+
+    private int getSubIdBySlot(int slot) {
+        int [] subId = SubscriptionManager.getSubId(slot);
+        if (subId == null || subId.length == 0) {
+            return getDefaultSubscription();
+        }
+        if (DBG) log("getSubIdBySlot, simId " + slot + "subId " + subId[0]);
+        return subId[0];
+    }
+
+    //@Override
+    public String getIccAtr(int slotId) {
+        log("> getIccAtr " + ",SimId = " + slotId);
+        String response = (String) sendRequest(CMD_GET_ATR, new Integer(slotId));
+        log("< getIccAtr: " + response);
+        return response;
+    }
+
+    //@Override
+    public byte[] iccOpenLogicalChannelWithSW(int slotId, String AID) {
+        enforceModifyPermissionOrCarrierPrivilege();
+
+        log("iccOpenLogicalChannelWithSW: " + AID + " slot " + slotId);
+        IccIoResult response = (IccIoResult) sendRequest(CMD_OPEN_CHANNEL_WITH_SW,
+                                                     AID, new Integer(slotId));
+
+        byte[] result = null;
+        int length = 2;
+
+        // check if open logical channel fail
+        if ((byte) response.sw1 == (byte) 0xff && (byte) response.sw2 == (byte) 0xff) {
+            result = new byte[1];
+            result[0] = (byte) 0x00;
+            log("< iccOpenLogicalChannelWithSW 0");
+            return result;
+        }
+
+        if (response.payload != null) {
+            length = 2 + response.payload.length;
+            result = new byte[length];
+            System.arraycopy(response.payload, 0, result, 0, response.payload.length);
+        } else {
+            result = new byte[length];
+        }
+        result[length - 1] = (byte) response.sw2;
+        result[length - 2] = (byte) response.sw1;
+
+        String funLog = "";
+        for (int i = 0 ; i < result.length; i++) {
+            funLog = funLog + ((int) result[i] & 0xff) + " ";
+        }
+        log("< iccOpenLogicalChannelWithSW " + funLog);
+        return result;
+    }
+
+    //@Override
+    public byte[] iccExchangeSimIOUsingSlot(int slotId, int fileID, int command, int p1, int p2, int p3,
+            String filePath) {
+        enforceModifyPermissionOrCarrierPrivilege();
+
+        log("Exchange SIM_IO slot " + slotId + " " + fileID + ":" + command + " " +
+            p1 + " " + p2 + " " + p3 + ":" + filePath);
+
+        IccIoResult response =
+            (IccIoResult) sendRequest(CMD_EXCHANGE_SIM_IO,
+                    new IccAPDUArgument(slotId, -1, fileID, command, p1, p2, p3, filePath));
+
+        log("Exchange SIM_IO [R]" + response);
+
+        byte[] result = null;
+        int length = 2;
+        if (response.payload != null) {
+            length = 2 + response.payload.length;
+            result = new byte[length];
+            System.arraycopy(response.payload, 0, result, 0, response.payload.length);
+        } else {
+            result = new byte[length];
+        }
+
+        result[length - 1] = (byte) response.sw2;
+        result[length - 2] = (byte) response.sw1;
+        return result;
+    }
+
+    public byte[] iccExchangeSimIOExUsingSlot(int slotId, int fileID, int command,
+                                     int p1, int p2, int p3, String filePath, String data, String pin2) {
+        int simId = slotId;
+
+        log("Exchange SIM_IO Ex " + fileID + ":" + command + " " +
+                 p1 + " " + p2 + " " + p3 + ":" + filePath + ", " + data + ", " + pin2 + ", simId = " + simId);
+
+        IccIoResult response =
+                (IccIoResult) sendRequest(CMD_SIM_IO,
+                        new IccAPDUArgument(simId, -1, fileID, command,
+                        p1, p2, p3, data, filePath, pin2));
+
+        log("Exchange SIM_IO Ex [R]" + response);
+        byte[] result = null; int length = 2;
+        if (response.payload != null) {
+            length = 2 + response.payload.length;
+            result = new byte[length];
+            System.arraycopy(response.payload, 0, result, 0, response.payload.length);
+        } else result = new byte[length];
+        log("Exchange SIM_IO Ex [L] " + length);
+        result[length - 1] = (byte) response.sw2;
+        result[length - 2] = (byte) response.sw1;
+        return result;
+    }
+
+    @Override
+    public IccOpenLogicalChannelResponse iccOpenLogicalChannelUsingSlot(int slotId, String AID) {
+        enforceModifyPermissionOrCarrierPrivilege();
+        // check if AID is valid
+        if (AID == null || (AID != null && AID.equals(""))) {
+            loge("AID is null or empty so return null immediately.");
+            return null;
+        }
+
+        log("iccOpenLogicalChannel: " + AID + " slot " + slotId);
+        IccOpenLogicalChannelResponse response = (IccOpenLogicalChannelResponse) sendRequest(
+                                   CMD_OPEN_CHANNEL, AID, new Integer(slotId));
+        log("iccOpenLogicalChannel: " + response);
+        return response;
+    }
+
+    @Override
+    public boolean iccCloseLogicalChannelUsingSlot(int slotId, int channel) {
+        enforceModifyPermissionOrCarrierPrivilege();
+
+        log("iccCloseLogicalChannel: " + channel + " slot " + slotId);
+        if (channel < 0) {
+          return false;
+        }
+        Boolean success = (Boolean) sendRequest(CMD_CLOSE_CHANNEL, new Integer(channel), new Integer(slotId));
+        log("iccCloseLogicalChannel: " + success);
+        return success;
+    }
+
+    @Override
+    public String iccTransmitApduLogicalChannelUsingSlot(int slotId, int channel, int cla,
+            int command, int p1, int p2, int p3, String data) {
+        enforceModifyPermissionOrCarrierPrivilege();
+
+        log("iccTransmitApduLogicalChannelUsingSlot: chnl=" + channel + " cla=" + cla +
+                " cmd=" + command + " p1=" + p1 + " p2=" + p2 + " p3=" + p3 +
+                " data=" + data + " slot=" + slotId);
+
+        if (channel < 0) {
+            return "";
+        }
+
+        IccIoResult response = (IccIoResult) sendRequest(CMD_TRANSMIT_APDU_LOGICAL_CHANNEL,
+                new IccAPDUArgument(slotId, channel, cla, command, p1, p2, p3, data, null, null));
+        log("iccTransmitApduLogicalChannelUsingSlot: " + response);
+
+        // If the payload is null, there was an error. Indicate that by returning
+        // an empty string.
+        if (response.payload == null) {
+          return "";
+        }
+
+        // Append the returned status code to the end of the response payload.
+        String s = Integer.toHexString(
+                (response.sw1 << 8) + response.sw2 + 0x10000).substring(1);
+        s = IccUtils.bytesToHexString(response.payload) + s;
+        return s;
+    }
+
+    @Override
+    public String iccTransmitApduBasicChannelUsingSlot(int slotId, int cla, int command, int p1, int p2,
+                int p3, String data) {
+        enforceModifyPermissionOrCarrierPrivilege();
+
+        log("iccTransmitApduBasicChannelUsingSlot: cla=" + cla + " cmd=" + command + " p1="
+                + p1 + " p2=" + p2 + " p3=" + p3 + " data=" + data + " slot=" + slotId);
+
+        IccIoResult response = (IccIoResult) sendRequest(CMD_TRANSMIT_APDU_BASIC_CHANNEL,
+                new IccAPDUArgument(slotId, 0, cla, command, p1, p2, p3, data));
+        log("iccTransmitApduBasicChannelUsingSlot: " + response);
+
+        // If the payload is null, there was an error. Indicate that by returning
+        // an empty string.
+        if (response.payload == null) {
+          return "";
+        }
+
+        // Append the returned status code to the end of the response payload.
+        String s = Integer.toHexString(
+                (response.sw1 << 8) + response.sw2 + 0x10000).substring(1);
+        s = IccUtils.bytesToHexString(response.payload) + s;
+        return s;
+    }
+
+    /**
+     * Set data policy enabled with for sub
+     * @hide
+     */
+    @Override
+    public void setPolicyDataEnableForSubscriber(int subId, boolean enabled) {
+        enforceModifyPermission();
+        Phone phone = getPhone(subId);
+        if (phone == null) {
+            loge("setPolicyDataEnableForSubscriber incorrect parameter [subId=" + subId
+                    + ", enable=" + enabled + "]");
+        } else {
+            PhoneBase phoneBase = (PhoneBase)(((PhoneProxy)phone).getActivePhone());
+            DcTrackerBase dcTracker = phoneBase.mDcTracker;
+            Message msg = dcTracker.obtainMessage(DctConstants.CMD_SET_POLICY_DATA_ENABLE);
+            msg.arg1 = enabled ? DctConstants.ENABLED : DctConstants.DISABLED;
+            dcTracker.sendMessage(msg);
+        }
     }
 }

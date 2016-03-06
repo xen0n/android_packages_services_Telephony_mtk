@@ -60,6 +60,8 @@ import com.android.internal.telephony.util.BlacklistUtils;
 import com.android.phone.common.CallLogAsync;
 import com.android.server.sip.SipService;
 
+import com.mediatek.phone.PhoneInterfaceManagerEx;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -141,6 +143,7 @@ public class PhoneGlobals extends ContextWrapper {
     NotificationMgr notificationMgr;
     Phone phone;
     PhoneInterfaceManager phoneMgr;
+    PhoneInterfaceManagerEx phoneMgrEx;
 
     private BluetoothManager bluetoothManager;
     private CallGatewayManager callGatewayManager;
@@ -410,6 +413,8 @@ public class PhoneGlobals extends ContextWrapper {
             bluetoothManager = new BluetoothManager();
 
             phoneMgr = PhoneInterfaceManager.init(this, phone);
+            // MTK
+            phoneMgrEx = PhoneInterfaceManagerEx.init(this, PhoneFactory.getDefaultPhone());
 
             // Create the CallNotifer singleton, which handles
             // asynchronous events from the telephony layer (like

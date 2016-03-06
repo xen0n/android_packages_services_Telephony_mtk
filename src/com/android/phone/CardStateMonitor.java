@@ -59,6 +59,9 @@ import com.android.internal.telephony.uicc.UiccCard;
 import com.android.internal.telephony.uicc.UiccCardApplication;
 import com.android.internal.telephony.uicc.UiccController;
 
+import com.mediatek.internal.telephony.cdma.CdmaFeatureOptionUtils;
+import com.mediatek.internal.telephony.ltedc.svlte.SvlteModeController;
+
 public class CardStateMonitor extends Handler {
 
     private static final String TAG = "CardStateMonitor";
@@ -213,6 +216,13 @@ public class CardStateMonitor extends Handler {
     }
 
     private void updateCardState(int sub) {
+        // need to check for MTK SVLTE case here
+        if (CdmaFeatureOptionUtils.isCdmaLteDcSupport()) {
+            if (sub == UiccController.INDEX_SVLTE) {
+                sub = SvlteModeController.getActiveSvlteModeSlotId();
+                logd("updateCardState: MTK SVLTE; real sub = " + sub);
+            }
+        }
         UiccCard uiccCard = getUiccCard(sub);
         logd("ICC changed on sub" + sub + ", state is "
                 + (uiccCard == null ? "NULL" : uiccCard.getCardState()));
