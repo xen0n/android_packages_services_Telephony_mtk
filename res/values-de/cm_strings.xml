@@ -29,7 +29,7 @@
   <string name="blacklist_summary">Sie werden keine Anrufe oder Nachrichten von Nummern aus der Sperrliste empfangen.</string>
   <!-- Sprint MWI Quirk: Phantom message wait indicator workaround -->
   <string name="mwi_notification_title">Indikator für wartende Nachricht anzeigen</string>
-  <string name="mwi_notification_summary">Einen Indikator für wartende Anrufbenachrichtigungen anzeigen</string>
+  <string name="mwi_notification_summary">Einen Indikator für wartende Anrufbenachrichtigungen anzeigen (Neustart erforderlich)</string>
   <!-- My Phone Number -->
   <string name="phone_number_label">Meine Rufnummer</string>
   <string name="phone_number_summary">Rufnummer für dieses Gerät setzen</string>
@@ -192,4 +192,6 @@
   <!-- Network mode picker dialog title -->
   <string name="choose_network_mode_title">Netzwerkmodus auswählen</string>
   <string name="choose_network_mode_system_default">Systemstandard</string>
+  <!-- Error message displayed on SIM Network Depersonalization panel with # of retries remaining -->
+  <string name="unlock_failed_remaining_retries">Die Anforderung zum Entsperren war nicht erfolgreich. Es verbleiben %1$d Versuche.</string>
 </resources>

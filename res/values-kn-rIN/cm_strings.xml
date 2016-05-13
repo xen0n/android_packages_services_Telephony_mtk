@@ -29,7 +29,6 @@
   <string name="blacklist_summary">ನಿರ್ಬಂಧಿಸಿದ ಕರೆಮಾಡುವರ ಪಟ್ಟಿಯಲ್ಲಿರುವ ದೂರವಾಣಿ ಸಂಖ್ಯೆಗಳಿಂದ ಒಳಬರುವ ಕರೆಗಳನ್ನು ಮತ್ತು ಸಂದೇಶಗಳನ್ನು ನೀವು ಸ್ವೀಕರಿಸುವುದಿಲ್ಲ</string>
   <!-- Sprint MWI Quirk: Phantom message wait indicator workaround -->
   <string name="mwi_notification_title">ಸಂದೇಶ ನಿರೀಕ್ಷೆ ಸೂಚಕ</string>
-  <string name="mwi_notification_summary">ಸಂದೇಶ ನಿರೀಕ್ಷೆ ಸೂಚಕ ಧ್ವನಿಮೇಲ್ ಅಧಿಸೂಚನೆಯನ್ನು ಪ್ರದರ್ಶಿಸು</string>
   <!-- My Phone Number -->
   <string name="phone_number_label">ನನ್ನ ದೂರವಾಣಿ ಸಂಖ್ಯೆ</string>
   <string name="phone_number_summary">ಈ ಸಾಧನಕ್ಕಾಗಿ ದೂರವಾಣಿ ಸಂಖ್ಯೆಯನ್ನು ಹೊಂದಿಸಿ</string>
@@ -188,4 +187,5 @@
   <string name="perm_change_mobile_network_desc">ಪ್ರಸ್ತುತ ನೆಟ್ವರ್ಕ್ ಮೋಡ್ ಮಾರ್ಪಡಿಸಲು ಅಪ್ಲಿಕೇಶನ್ಗೆ ಅನುಮತಿಸುತ್ತದೆ.</string>
   <!-- Mobile network settings, COLP -->
   <!-- Network mode picker dialog title -->
+  <!-- Error message displayed on SIM Network Depersonalization panel with # of retries remaining -->
 </resources>

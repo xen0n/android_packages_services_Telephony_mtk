@@ -297,8 +297,7 @@ public class MobileNetworkSettings extends PreferenceActivity
             if (DBG) log("onSubscriptionsChanged: newSil: " + newSil +
                     " mActiveSubInfos: " + mActiveSubInfos);
             if (newSil == null || newSil.isEmpty()) {
-                if (DBG) log("onSubscriptionsChanged: empty subscriptions, finishing");
-                finish();
+                if (DBG) log("onSubscriptionsChanged: empty subscriptions, return");
                 return;
             }
             // Update UI when there is a change in number of active subscriptions or
@@ -684,7 +683,7 @@ public class MobileNetworkSettings extends PreferenceActivity
                 throw new IllegalStateException("Unexpected phone type: " + phoneType);
             }
 
-            int[] ev = getDeviceNetworkEntriesAndValues(this, mPhone.getSubId(), settingsNetworkMode);
+            int[] ev = getDeviceNetworkEntriesAndValues(this, mPhone, settingsNetworkMode);
             mButtonEnabledNetworks.setEntries(ev[0]);
             mButtonEnabledNetworks.setEntryValues(ev[1]);
             mButtonEnabledNetworks.setOnPreferenceChangeListener(this);
@@ -779,15 +778,9 @@ public class MobileNetworkSettings extends PreferenceActivity
         if (ps != null) {
             ps.setEnabled(hasActiveSubscriptions);
         }
-
-        boolean isDsds = TelephonyManager.getDefault().getMultiSimConfiguration()
-                == TelephonyManager.MultiSimVariants.DSDS;
-        boolean isMultiRat = SystemProperties.getBoolean("ro.ril.multi_rat_capable", true);
-        if (isDsds && !isMultiRat && (mPhone.getSubId()
-                != mSubscriptionManager.getDefaultDataSubId())) {
-            root.removePreference(mButtonPreferredNetworkMode);
-            root.removePreference(mLteDataServicePref);
-            root.removePreference(mButtonEnabledNetworks);
+        ps = findPreference(BUTTON_COLP_KEY);
+        if (ps != null) {
+            ps.setEnabled(hasActiveSubscriptions);
         }
 
         boolean COLPEnabled = Settings.Global.getInt(getContentResolver(),
@@ -967,7 +960,8 @@ public class MobileNetworkSettings extends PreferenceActivity
         nwMode = SubscriptionController.getInstance().getUserNwMode(subId);
 
         //If its default nw mode, choose the nw mode from the overlays.
-        if (nwMode == SubscriptionManager.DEFAULT_NW_MODE) {
+        if (nwMode == SubscriptionManager.DEFAULT_NW_MODE
+                && SubscriptionManager.isValidSubscriptionId(subId)) {
             try {
                 nwMode = android.provider.Settings.Global.getInt(
                         getContentResolver(), Settings.Global.PREFERRED_NETWORK_MODE + subId);
@@ -1421,15 +1415,15 @@ public class MobileNetworkSettings extends PreferenceActivity
      * <li>1 = entry values</li>
      * </ul>
      */
-    public static int[] getDeviceNetworkEntriesAndValues(Context context, int subId,
+    public static int[] getDeviceNetworkEntriesAndValues(Context context, Phone phone,
             int settingsNetworkMode) {
 
         PersistableBundle carrierConfig =
-                PhoneGlobals.getInstance().getCarrierConfigForSubId(subId);
+                PhoneGlobals.getInstance().getCarrierConfigForSubId(phone.getSubId());
 
-        boolean isLteOnCdma = TelephonyManager.from(context).getLteOnCdmaMode(subId)
-                == PhoneConstants.LTE_ON_CDMA_TRUE;
-        final int phoneType = TelephonyManager.from(context).getCurrentPhoneType(subId);
+        boolean isLteOnCdma = phone.getLteOnCdmaMode() == PhoneConstants.LTE_ON_CDMA_TRUE;
+        final int phoneType = phone.getPhoneType();
+        final int subId = phone.getSubId();
 
         int[] ev = new int[2];
         if (phoneType == PhoneConstants.PHONE_TYPE_CDMA) {

@@ -25,7 +25,6 @@
   <string name="blacklist_summary">Du vil ikke motta innkommende samtaler eller meldinger fra telefonnumre på listen over blokkerte telefonnummer</string>
   <!-- Sprint MWI Quirk: Phantom message wait indicator workaround -->
   <string name="mwi_notification_title">Melding venter indikator</string>
-  <string name="mwi_notification_summary">Vis melding venter indikator som voicemail varsler</string>
   <!-- My Phone Number -->
   <string name="phone_number_label">Telefonnummeret mitt</string>
   <string name="phone_number_summary">Angi telefonnummeret for denne enheten</string>
@@ -179,4 +178,7 @@
   <string name="perm_change_mobile_network">endre nettverksmodus</string>
   <!-- Mobile network settings, COLP -->
   <!-- Network mode picker dialog title -->
+  <string name="choose_network_mode_title">Velg nettverksmodus</string>
+  <string name="choose_network_mode_system_default">Systemstandard</string>
+  <!-- Error message displayed on SIM Network Depersonalization panel with # of retries remaining -->
 </resources>

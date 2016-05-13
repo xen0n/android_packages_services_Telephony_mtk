@@ -29,7 +29,7 @@
   <string name="blacklist_summary">Tulevat puhelut ja viestit estettyjen soittajien listalla olevista puhelinnumeroista estetään</string>
   <!-- Sprint MWI Quirk: Phantom message wait indicator workaround -->
   <string name="mwi_notification_title">Viesti odottaa-merkki</string>
-  <string name="mwi_notification_summary">Näytä merkki viestin odottaessa vastaajassa</string>
+  <string name="mwi_notification_summary">Näytä merkki viestin odottaessa vastaajassa (uudelleenkäynnistys vaaditaan)</string>
   <!-- My Phone Number -->
   <string name="phone_number_label">Oma puhelinnumero</string>
   <string name="phone_number_summary">Aseta tämän laitteen puhelinnumero</string>
@@ -192,4 +192,6 @@
   <!-- Network mode picker dialog title -->
   <string name="choose_network_mode_title">Valitse verkkotila</string>
   <string name="choose_network_mode_system_default">Järjestelmän oletus</string>
+  <!-- Error message displayed on SIM Network Depersonalization panel with # of retries remaining -->
+  <string name="unlock_failed_remaining_retries">Avausyritys epäonnistui, %1$d yritystä jäljellä.</string>
 </resources>

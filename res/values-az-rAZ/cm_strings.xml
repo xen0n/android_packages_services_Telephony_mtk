@@ -25,7 +25,6 @@
   <string name="blacklist_summary">Əngəllənən zəng edənlərin siyahısındakı nömrələrdən gələn zənglər və ya mesajlar qəbul edilməyəcək</string>
   <!-- Sprint MWI Quirk: Phantom message wait indicator workaround -->
   <string name="mwi_notification_title">Mesaj gözləmə göstəricisi</string>
-  <string name="mwi_notification_summary">Mesaj gözləmə göstəricisində səsli poçt bildirişlərini göstər</string>
   <!-- My Phone Number -->
   <string name="phone_number_label">Telefon nömrəm</string>
   <string name="phone_number_summary">Bu cihaz üçün telefon nömrəsini tənzimlə</string>
@@ -145,4 +144,5 @@
   <!-- Permission to modify network mode via intent -->
   <!-- Mobile network settings, COLP -->
   <!-- Network mode picker dialog title -->
+  <!-- Error message displayed on SIM Network Depersonalization panel with # of retries remaining -->
 </resources>
