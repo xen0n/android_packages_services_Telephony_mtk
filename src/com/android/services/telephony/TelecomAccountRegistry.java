@@ -457,7 +457,7 @@ final class TelecomAccountRegistry {
 
         final boolean phoneAccountsEnabled = mContext.getResources().getBoolean(
                 R.bool.config_pstn_phone_accounts_enabled);
-
+        int primaryStackId = 0;
         if (phoneAccountsEnabled) {
             // states we are interested in from what
             // IExtTelephony.getCurrentUiccCardProvisioningStatus()can return
@@ -465,7 +465,7 @@ final class TelecomAccountRegistry {
             final int INVALID_STATE = -1;
 
             IExtTelephony mExtTelephony =
-                IExtTelephony.Stub.asInterface(ServiceManager.getService("extphone"));
+                    IExtTelephony.Stub.asInterface(ServiceManager.getService("extphone"));
 
             for (Phone phone : phones) {
                 int provisionStatus = PROVISIONED;
@@ -506,14 +506,23 @@ final class TelecomAccountRegistry {
                     mAccounts.add(new AccountEntry(phone, false /* emergency */, false /* isDummy */));
                 }
             }
+
+            try {
+                //get primary stack phone id.
+                primaryStackId = mExtTelephony.getPrimaryStackPhoneId();
+            } catch (RemoteException ex) {
+                Log.w(this, "Failed to get primary stack id");
+            } catch (NullPointerException ex) {
+                Log.w(this, "Failed to get primary stack id");
+            }
         }
 
         // If we did not list ANY accounts, we need to provide a "default" SIM account
         // for emergency numbers since no actual SIM is needed for dialing emergency
         // numbers but a phone account is.
         if (mAccounts.isEmpty()) {
-            mAccounts.add(new AccountEntry(PhoneFactory.getDefaultPhone(), true /* emergency */,
-                    false /* isDummy */));
+            mAccounts.add(new AccountEntry(PhoneFactory.getPhone(primaryStackId), true
+                    /* emergency */, false /* isDummy */));
         }
 
         // Add a fake account entry.

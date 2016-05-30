@@ -29,6 +29,7 @@ import android.view.View;
 
 import org.codeaurora.ims.qtiims.IQtiImsInterfaceListener;
 import org.codeaurora.ims.qtiims.IQtiImsInterface;
+import org.codeaurora.ims.qtiims.QtiImsInterfaceListenerBaseImpl;
 import org.codeaurora.ims.qtiims.QtiViceInfo;
 
 import static com.android.phone.TimeConsumingPreferenceActivity.RESPONSE_ERROR;
@@ -74,8 +75,6 @@ public class CallForwardEditPreference extends EditPhoneNumberPreference {
 
         TypedArray a = context.obtainStyledAttributes(attrs,
                 R.styleable.CallForwardEditPreference, 0, R.style.EditPhoneNumberPreference);
-        mServiceClass = a.getInt(R.styleable.CallForwardEditPreference_serviceClass,
-                CommandsInterface.SERVICE_CLASS_VOICE);
         reason = a.getInt(R.styleable.CallForwardEditPreference_reason,
                 CommandsInterface.CF_REASON_UNCONDITIONAL);
         a.recycle();
@@ -87,7 +86,9 @@ public class CallForwardEditPreference extends EditPhoneNumberPreference {
         this(context, null);
     }
 
-    void init(TimeConsumingPreferenceListener listener, boolean skipReading, Phone phone) {
+    void init(TimeConsumingPreferenceListener listener, boolean skipReading, Phone phone,
+            int serviceClass) {
+        mServiceClass = serviceClass;
         mPhone = phone;
         mTcpListener = listener;
         isTimerEnabled = isTimerEnabled();
@@ -100,7 +101,7 @@ public class CallForwardEditPreference extends EditPhoneNumberPreference {
                 intent.setPackage(IMS_SERVICE_PKG_NAME);
                 getContext().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
             } else {
-                mPhone.getCallForwardingOption(reason,
+                mPhone.getCallForwardingOption(reason, mServiceClass,
                         mHandler.obtainMessage(MyHandler.MESSAGE_GET_CF,
                         // unused in this case
                         CommandsInterface.CF_ACTION_DISABLE,
@@ -118,7 +119,9 @@ public class CallForwardEditPreference extends EditPhoneNumberPreference {
     }
 
     private boolean isTimerEnabled() {
-        return getContext().getResources().getBoolean(R.bool.config_enable_cfu_time);
+        //Timer is enabled only when UT services are enabled
+        return getContext().getResources().getBoolean(
+                R.bool.config_enable_cfu_time) && mPhone.isUtEnabled();
     }
 
     /*This will be invoked once service is bound to client*/
@@ -207,9 +210,7 @@ public class CallForwardEditPreference extends EditPhoneNumberPreference {
                         Log.d(LOG_TAG, "setCallForwardUncondTimer exception!" +e);
                     }
                 } else {
-                    // the interface of Phone.setCallForwardingOption has error:
-                    // should be action, reason...
-                    mPhone.setCallForwardingOption(action, reason, number, time,
+                    mPhone.setCallForwardingOption(action, reason, number, mServiceClass, time,
                         mHandler.obtainMessage(MyHandler.MESSAGE_SET_CF, action,
                                 MyHandler.MESSAGE_SET_CF));
                 }
@@ -263,7 +264,10 @@ public class CallForwardEditPreference extends EditPhoneNumberPreference {
 
     }
 
-    private IQtiImsInterfaceListener imsInterfaceListener = new IQtiImsInterfaceListener.Stub() {
+    private QtiImsInterfaceListenerBaseImpl imsInterfaceListener =
+            new QtiImsInterfaceListenerBaseImpl() {
+
+        @Override
         public void onSetCallForwardUncondTimer(int status) {
             if (DBG) Log.d(LOG_TAG, "onSetCallForwardTimer status= "+status);
             try {
@@ -275,6 +279,7 @@ public class CallForwardEditPreference extends EditPhoneNumberPreference {
             }
         }
 
+        @Override
         public void onGetCallForwardUncondTimer(int startHour, int endHour, int startMinute,
                 int endMinute, int reason, int status, String number, int service) {
             Log.d(LOG_TAG,"onGetCallForwardUncondTimer startHour= " + startHour + " endHour = "
@@ -290,19 +295,11 @@ public class CallForwardEditPreference extends EditPhoneNumberPreference {
             handleGetCFTimerResponse();
         }
 
+        @Override
         public void onUTReqFailed(int errCode, String errString) {
             if (DBG) Log.d(LOG_TAG, "onUTReqFailed errCode= "+errCode + "errString ="+ errString);
+            mTcpListener.onFinished(CallForwardEditPreference.this, true);
             mTcpListener.onError(CallForwardEditPreference.this, RESPONSE_ERROR);
-        }
-
-        public void onGetPacketCount(int status, long packetCount) {
-        }
-
-        public void onGetPacketErrorCount(int status, long packetErrorCount) {
-        }
-
-        public void receiveCallDeflectResponse(int result) {
-            /* Not implemented, dummy implementation to avoid compilation errors */
         }
 
         public void notifyRefreshViceInfo(QtiViceInfo qtiViceInfo) {
@@ -423,7 +420,7 @@ public class CallForwardEditPreference extends EditPhoneNumberPreference {
                 // setEnabled(false);
             }
             if (DBG) Log.d(LOG_TAG, "handleSetCFResponse: re get");
-            mPhone.getCallForwardingOption(reason,
+            mPhone.getCallForwardingOption(reason, mServiceClass,
                     obtainMessage(MESSAGE_GET_CF, msg.arg1, MESSAGE_SET_CF, ar.exception));
         }
     }
